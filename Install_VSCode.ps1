@@ -24,6 +24,28 @@
 
 #region Functions
 
+function Invoke-Ensure64bitEnvironment {
+    <#
+    .SYNOPSIS
+        Check if the script is running in a 32-bit or 64-bit environment, and relaunch using 64-bit PowerShell if necessary.
+
+    .NOTES
+        This script checks the processor architecture to determine the environment.
+        If it's running in a 32-bit environment on a 64-bit system (WOW64), 
+        it will relaunch using the 64-bit version of PowerShell.
+        Place the function at the beginning of the script to ensure a switch to 64-bit when necessary.
+    #>
+    if ($ENV:PROCESSOR_ARCHITECTURE -eq "x86" -and $ENV:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
+        $currentScript = $MyInvocation.MyCommand.Name
+        Write-Output "Detected 32-bit PowerShell on 64-bit system. Relaunching script in 64-bit environment..."
+        Start-Process -FilePath "$ENV:WINDIR\SysNative\WindowsPowershell\v1.0\PowerShell.exe" -ArgumentList "-WindowStyle Hidden -NonInteractive -File `"$($PSScriptRoot)\$currentScript`" " -Wait -NoNewWindow
+        exit # Terminate the 32-bit process
+    } elseif ($ENV:PROCESSOR_ARCHITECTURE -eq "x86") {
+        Write-Output "Detected 32-bit PowerShell on a 32-bit system. Stopping script execution."
+        exit # Terminate the script if it's a pure 32-bit system
+    }
+}
+
 function Find-WingetPath {
     <#
     .SYNOPSIS
@@ -136,6 +158,11 @@ $installInfo                                # Information about the Winget insta
 
 # Make the log easier to read
 Write-Host `n`n
+
+# Invoke the function to ensure we're running in a 64-bit environment if available
+Invoke-Ensure64bitEnvironment
+
+Write-Host "Script running in 64-bit environment."
 
 # Check if Winget is available in current context, if not, find it
 $wingetPath = (Get-Command -Name winget -ErrorAction SilentlyContinue).Source
