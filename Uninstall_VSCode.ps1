@@ -36,9 +36,8 @@ function Invoke-Ensure64bitEnvironment {
         Place the function at the beginning of the script to ensure a switch to 64-bit when necessary.
     #>
     if ($ENV:PROCESSOR_ARCHITECTURE -eq "x86" -and $ENV:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
-        $currentScript = $MyInvocation.MyCommand.Name
         Write-Output "Detected 32-bit PowerShell on 64-bit system. Relaunching script in 64-bit environment..."
-        Start-Process -FilePath "$ENV:WINDIR\SysNative\WindowsPowershell\v1.0\PowerShell.exe" -ArgumentList "-WindowStyle Hidden -NonInteractive -File `"$($PSScriptRoot)\$currentScript`" " -Wait -NoNewWindow
+        Start-Process -FilePath "$ENV:WINDIR\SysNative\WindowsPowershell\v1.0\PowerShell.exe" -ArgumentList "-WindowStyle Hidden -NonInteractive -File `"$($PSCommandPath)`" " -Wait -NoNewWindow
         exit # Terminate the 32-bit process
     } elseif ($ENV:PROCESSOR_ARCHITECTURE -eq "x86") {
         Write-Output "Detected 32-bit PowerShell on a 32-bit system. Stopping script execution."
@@ -161,7 +160,6 @@ Write-Host `n`n
 
 # Invoke the function to ensure we're running in a 64-bit environment if available
 Invoke-Ensure64bitEnvironment
-
 Write-Host "Script running in 64-bit environment."
 
 # Check if Winget is installed and, if not, find it
